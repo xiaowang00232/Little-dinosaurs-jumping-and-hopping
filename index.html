@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chrome Dino Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f7f7f7;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background-color: white;
+            border: 1px solid #ccc;
+        }
+        #score {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <canvas id="game" width="800" height="200"></canvas>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        // Game variables
+        let score = 0;
+        let gameSpeed = 5;
+        let isGameOver = false;
+        let gameFrame = 0;
+
+        // Dino variables
+        const dino = {
+            x: 50,
+            y: 150,
+            width: 30,
+            height: 50,
+            velocityY: 0,
+            gravity: 0.8,
+            jumpForce: -15,
+            isJumping: false
+        };
+
+        // Cactus variables
+        const cacti = [];
+        let cactusFrequency = 100; // frames between cacti
+
+        // Game loop
+        function gameLoop() {
+            if (isGameOver) return;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw dino
+            updateDino();
+            drawDino();
+
+            // Update and draw cacti
+            updateCacti();
+            drawCacti();
+
+            // Update score
+            updateScore();
+
+            // Check collisions
+            checkCollisions();
+
+            // Increase game speed over time
+            if (gameFrame % 500 === 0) {
+                gameSpeed += 0.5;
+                cactusFrequency = Math.max(20, cactusFrequency - 5);
+            }
+
+            gameFrame++;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateDino() {
+            // Apply gravity
+            dino.velocityY += dino.gravity;
+            dino.y += dino.velocityY;
+
+            // Ground collision
+            if (dino.y > 150) {
+                dino.y = 150;
+                dino.velocityY = 0;
+                dino.isJumping = false;
+            }
+        }
+
+        function drawDino() {
+            ctx.fillStyle = '#333';
+            ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
+            
+            // Draw eyes
+            ctx.fillStyle = 'white';
+            ctx.fillRect(dino.x + 20, dino.y + 10, 5, 5);
+        }
+
+        function updateCacti() {
+            // Add new cactus
+            if (gameFrame % cactusFrequency === 0) {
+                cacti.push({
+                    x: canvas.width,
+                    y: 150,
+                    width: 20,
+                    height: 40
+                });
+            }
+
+            // Move cacti
+            for (let i = 0; i < cacti.length; i++) {
+                cacti[i].x -= gameSpeed;
+            }
+
+            // Remove off-screen cacti
+            while (cacti.length > 0 && cacti[0].x < -20) {
+                cacti.shift();
+                score++;
+            }
+        }
+
+        function drawCacti() {
+            ctx.fillStyle = '#555';
+            for (let cactus of cacti) {
+                ctx.fillRect(cactus.x, cactus.y, cactus.width, cactus.height);
+            }
+        }
+
+        function updateScore() {
+            scoreElement.textContent = `Score: ${score}`;
+        }
+
+        function checkCollisions() {
+            for (let cactus of cacti) {
+                if (
+                    dino.x < cactus.x + cactus.width &&
+                    dino.x + dino.width > cactus.x &&
+                    dino.y < cactus.y + cactus.height &&
+                    dino.y + dino.height > cactus.y
+                ) {
+                    gameOver();
+                    break;
+                }
+            }
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game Over!', canvas.width/2, canvas.height/2);
+            ctx.font = '20px Arial';
+            ctx.fillText('Press Space to Restart', canvas.width/2, canvas.height/2 + 40);
+        }
+
+        function resetGame() {
+            score = 0;
+            gameSpeed = 5;
+            isGameOver = false;
+            gameFrame = 0;
+            cacti.length = 0;
+            dino.y = 150;
+            dino.velocityY = 0;
+            dino.isJumping = false;
+            gameLoop();
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                if (!dino.isJumping && !isGameOver) {
+                    dino.velocityY = dino.jumpForce;
+                    dino.isJumping = true;
+                } else if (isGameOver) {
+                    resetGame();
+                }
+            }
+        });
+
+        // Start game
+        gameLoop();
+    </script>
+</body>
+</html>
